@@ -1,0 +1,54 @@
+trigger: none
+
+stages:
+  - stage: scanning
+  - stage: build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    jobs:
+      - job: build
+        steps:
+        - script: |
+            npm install
+            npm run build
+          displayName: 'npm install and build'
+        - task: PublishBuildArtifacts@1
+          inputs:
+            PathtoPublish: '$(System.DefaultWorkingDirectory)/build'
+            ArtifactName: 'drop'
+            publishLocation: 'Container'
+        - task: UniversalPackages@0
+          inputs:
+            command: 'publish'
+            publishDirectory: '$(System.DefaultWorkingDirectory)/build'
+            feedsToUsePublish: 'internal'
+            vstsFeedPublish: '39624c80-64b2-45b4-85e4-eaa68be35cbe'
+            vstsFeedPackagePublish: 'drop'
+            versionOption: 'patch'
+
+  - stage: deploy
+    displayName: deploy
+    jobs:
+      - deployment: deploy
+        environment: 
+         name: mono-dev
+         resourceType: VirtualMachine
+        strategy:
+         runOnce:
+           deploy:
+             steps:
+             - task: DownloadBuildArtifacts@1
+               inputs:
+                 buildType: 'current'
+                 downloadType: 'single'
+                 artifactName: 'drop'
+                 downloadPath: '$(System.ArtifactsDirectory)'
+                 cleanDestinationFolder: true
+
+             - script: sudo cp -r $(System.ArtifactsDirectory)/* /var/www/html
+
+
+
+
+
