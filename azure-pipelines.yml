@@ -1,7 +1,7 @@
 trigger: none
 
 stages:
-  - stage: scanning
+  # - stage: scanning
   - stage: build
     displayName: Build
     pool:
